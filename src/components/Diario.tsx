@@ -161,10 +161,10 @@ export default function Diario() {
                     ) : null}
                     <div className="img-fallback absolute inset-0 flex-col items-center justify-center gap-3" style={{ display: post.image_url ? 'none' : 'flex' }}>
                       <div
-                        className="w-12 h-12 rounded-full grid place-items-center text-xl font-serif"
-                        style={{ background: `${meta.accent}18`, border: `1px solid ${meta.accent}40`, color: meta.accent }}
+                        className="w-12 h-12 rounded-full grid place-items-center"
+                        style={{ background: `${meta.accent}18`, border: `1px solid ${meta.accent}40` }}
                       >
-                        {meta.emoji}
+                        {(() => { const Icon = meta.icon; return <Icon className="w-5 h-5" strokeWidth={1.5} style={{ color: meta.accent }} />; })()}
                       </div>
                       <span className="text-[10px] uppercase tracking-[0.2em] text-[#8A8079]">
                         Foto del día
@@ -287,10 +287,10 @@ function ReadingModal({
           ) : null}
           <div className="img-fallback absolute inset-0 flex-col items-center justify-center gap-3" style={{ display: post.image_url ? 'none' : 'flex' }}>
             <div
-              className="w-14 h-14 rounded-full grid place-items-center text-2xl font-serif"
-              style={{ background: `${meta.accent}18`, border: `1px solid ${meta.accent}40`, color: meta.accent }}
+              className="w-14 h-14 rounded-full grid place-items-center"
+              style={{ background: `${meta.accent}18`, border: `1px solid ${meta.accent}40` }}
             >
-              {meta.emoji}
+              {(() => { const Icon = meta.icon; return <Icon className="w-6 h-6" strokeWidth={1.5} style={{ color: meta.accent }} />; })()}
             </div>
             <span className="text-[10px] uppercase tracking-[0.2em] text-[#8A8079]">
               Foto del día

@@ -69,7 +69,7 @@ export default function LatestEntry() {
             className="w-12 h-12 rounded-full grid place-items-center text-xl"
             style={{ background: `${meta.accent}18`, border: `1px solid ${meta.accent}40`, color: meta.accent }}
           >
-            {meta.emoji}
+            {(() => { const Icon = meta.icon; return <Icon className="w-5 h-5" strokeWidth={1.5} />; })()}
           </div>
         </div>
         <div className="absolute top-3 left-3 px-3 py-1 rounded-full glass-linen text-[10px] font-semibold uppercase tracking-[0.15em]" style={{ color: meta.accent }}>
