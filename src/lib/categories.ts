@@ -1,10 +1,12 @@
+import type { LucideIcon } from 'lucide-react';
+import { Heart, Brain, Baby, Wallet, Crown } from 'lucide-react';
 import type { DiaryCategory } from './supabase';
 
 export interface CategoryMeta {
   id: DiaryCategory;
   label: string;
   description: string;
-  emoji: string;
+  icon: LucideIcon;
   accent: string;
 }
 
@@ -12,36 +14,36 @@ export const CATEGORIES: CategoryMeta[] = [
   {
     id: 'cuerpo',
     label: 'Cuerpo',
-    description: 'Mi hogar fÃ­sico',
-    emoji: 'ð',
+    description: 'Mi hogar físico',
+    icon: Heart,
     accent: '#B8951E',
   },
   {
     id: 'mente',
     label: 'Mente y Espiritualidad',
     description: 'Mi paz interior',
-    emoji: 'ð§ ',
+    icon: Brain,
     accent: '#C9A227',
   },
   {
     id: 'madre',
     label: 'Maternidad',
     description: 'Criar con consciencia',
-    emoji: 'ð¤±',
+    icon: Baby,
     accent: '#D4AF37',
   },
   {
     id: 'finanzas',
     label: 'Finanzas',
     description: 'Mi control y libertad',
-    emoji: 'ð',
+    icon: Wallet,
     accent: '#B8951E',
   },
   {
     id: 'mujer',
     label: 'Ser Mujer',
     description: 'La identidad que las abarca a todas',
-    emoji: 'ð',
+    icon: Crown,
     accent: '#D4AF37',
   },
 ];

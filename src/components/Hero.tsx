@@ -5,6 +5,7 @@ import { CATEGORIES } from '@/lib/categories';
 export default function Hero() {
   return (
     <section className="relative pt-16 lg:pt-24 pb-20 lg:pb-28 overflow-hidden">
+      {/* Ambient gold orbs */}
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute top-20 -left-20 w-96 h-96 rounded-full bg-[#D4AF37]/8 blur-[120px] animate-float" />
         <div className="absolute bottom-0 -right-20 w-96 h-96 rounded-full bg-[#EAD7C3]/30 blur-[120px]" />
@@ -46,6 +47,7 @@ export default function Hero() {
           </Link>
         </div>
 
+        {/* 5 Pilares grid */}
         <div className="mt-16 animate-fade-up" style={{ animationDelay: '0.3s' }}>
           <p className="text-[10px] font-semibold tracking-[0.22em] uppercase text-[#8A8079] mb-6">
             ¿Qué encontrarás aquí?
@@ -60,7 +62,7 @@ export default function Hero() {
                   className="w-11 h-11 lg:w-12 lg:h-12 rounded-full grid place-items-center mx-auto mb-3 transition-transform duration-500 group-hover:scale-110"
                   style={{ background: `${pillar.accent}15`, border: `1px solid ${pillar.accent}40` }}
                 >
-                  <span className="text-xl lg:text-2xl">{pillar.emoji}</span>
+                  <pillar.icon className="w-5 h-5 lg:w-6 lg:h-6" strokeWidth={1.5} style={{ color: pillar.accent }} />
                 </div>
                 <p className="font-serif text-[13px] lg:text-sm font-semibold text-[#3D3833] leading-tight">
                   {pillar.label}
@@ -73,6 +75,7 @@ export default function Hero() {
           </div>
         </div>
 
+        {/* Kintsugi divider */}
         <div className="kintsugi-divider mt-16 max-w-xs mx-auto" />
       </div>
     </section>
