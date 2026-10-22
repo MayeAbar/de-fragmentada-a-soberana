@@ -106,39 +106,32 @@ export default function AdminPanel() {
                 <div className="flex flex-wrap gap-2">
                   {CATEGORIES.map((c) => (
                     <button key={c.id} type="button" onClick={() => setCategory(c.id)} className={`px-4 py-2 rounded-full text-[13px] font-serif font-medium transition-all border ${category === c.id ? 'border-gold/50 bg-gold/10 text-[#3D3833] gold-glow' : 'border-nude text-[#8A8079] hover:text-[#3D3833] hover:border-gold/30'}`}>
-                      <span className="mr-1.5">{c.emoji}</span>{c.label}
+                      <c.icon className="w-4 h-4 mr-1.5 inline-block" strokeWidth={1.5} style={{ color: c.accent }} />{c.label}
                     </button>
                   ))}
                 </div>
               </div>
-
               <div>
                 <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8A8079] mb-2">Título</label>
                 <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="El título de la reflexión…" className="w-full px-4 py-3.5 rounded-xl bg-white/50 border border-nude text-[#3D3833] text-sm font-serif placeholder:text-[#8A8079] focus:outline-none focus:border-gold/50 transition-colors" />
               </div>
-
               <div>
                 <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8A8079] mb-2">Cuerpo Íntimo</label>
                 <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={6} placeholder="Escribe la entrada del diario…" className="w-full px-4 py-3.5 rounded-xl bg-white/50 border border-nude text-[#3D3833] text-sm leading-relaxed placeholder:text-[#8A8079] focus:outline-none focus:border-gold/50 transition-colors resize-none" />
               </div>
-
               <div>
                 <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8A8079] mb-2">Texto para TikTok <span className="text-[#EAD7C3] normal-case tracking-normal">(opcional)</span></label>
                 <textarea value={tiktokScript} onChange={(e) => setTiktokScript(e.target.value)} rows={4} placeholder="3-4 frases cortas de alta retención para video vertical…" className="w-full px-4 py-3.5 rounded-xl bg-white/50 border border-nude text-[#3D3833] text-sm placeholder:text-[#8A8079] focus:outline-none focus:border-gold/50 transition-colors resize-none" />
               </div>
-
               <div>
                 <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8A8079] mb-2">Texto para Instagram <span className="text-[#EAD7C3] normal-case tracking-normal">(opcional)</span></label>
                 <textarea value={instagramText} onChange={(e) => setInstagramText(e.target.value)} rows={5} placeholder="Título, 2-3 párrafos resumidos y pregunta final interactiva…" className="w-full px-4 py-3.5 rounded-xl bg-white/50 border border-nude text-[#3D3833] text-sm leading-relaxed placeholder:text-[#8A8079] focus:outline-none focus:border-gold/50 transition-colors resize-none" />
               </div>
-
               <div>
                 <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8A8079] mb-2">Foto <span className="text-[#EAD7C3] normal-case tracking-normal">(opcional)</span></label>
                 <input type="url" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://… (URL de la foto del día)" className="w-full px-4 py-3.5 rounded-xl bg-white/50 border border-nude text-[#3D3833] text-sm placeholder:text-[#8A8079] focus:outline-none focus:border-gold/50 transition-colors" />
               </div>
-
               {error && <p className="text-xs text-red-700">{error}</p>}
-
               <button type="submit" disabled={status === 'loading'} className="w-full inline-flex items-center justify-center gap-2.5 px-7 py-4 rounded-xl bg-[#3D3833] font-semibold text-sm tracking-wide gold-glow hover:bg-[#5C544D] transition-colors disabled:opacity-60" style={{ color: '#EFECE6' }}>
                 {status === 'loading' ? (<><Loader2 className="w-4.5 h-4.5 animate-spin" strokeWidth={1.75} />Publicando…</>) : (<><Send className="w-4.5 h-4.5" strokeWidth={1.75} />Publicar entrada</>)}
               </button>
