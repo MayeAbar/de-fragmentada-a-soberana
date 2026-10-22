@@ -61,17 +61,17 @@ export default function LatestEntry() {
             alt={post.title}
             className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
             loading="lazy"
+            onError={(e) => { (e.currentTarget.parentElement!.querySelector('.img-fallback') as HTMLElement)?.style.setProperty('display', 'flex'); e.currentTarget.style.display = 'none'; }}
           />
-        ) : (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-            <div
-              className="w-12 h-12 rounded-full grid place-items-center text-xl"
-              style={{ background: `${meta.accent}18`, border: `1px solid ${meta.accent}40`, color: meta.accent }}
-            >
-              {meta.emoji}
-            </div>
+        ) : null}
+        <div className="img-fallback absolute inset-0 flex-col items-center justify-center gap-2" style={{ display: post.image_url ? 'none' : 'flex' }}>
+          <div
+            className="w-12 h-12 rounded-full grid place-items-center text-xl"
+            style={{ background: `${meta.accent}18`, border: `1px solid ${meta.accent}40`, color: meta.accent }}
+          >
+            {meta.emoji}
           </div>
-        )}
+        </div>
         <div className="absolute top-3 left-3 px-3 py-1 rounded-full glass-linen text-[10px] font-semibold uppercase tracking-[0.15em]" style={{ color: meta.accent }}>
           {meta.label}
         </div>

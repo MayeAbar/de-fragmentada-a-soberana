@@ -95,6 +95,7 @@ export default function Diario() {
           </h2>
         </div>
 
+        {/* Tabs */}
         <div className="flex flex-wrap gap-2 mb-10">
           {tabs.map((t) => (
             <button
@@ -111,6 +112,7 @@ export default function Diario() {
           ))}
         </div>
 
+        {/* Feed */}
         {loading ? (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {Array.from({ length: 3 }).map((_, i) => (
@@ -142,6 +144,7 @@ export default function Diario() {
                   key={post.id}
                   className="group glass-card rounded-2xl overflow-hidden hover:gold-glow transition-all duration-500 flex flex-col"
                 >
+                  {/* 3:4 photo / placeholder */}
                   <div
                     className="relative aspect-[3/4] overflow-hidden cursor-pointer"
                     onClick={() => setSelected(post)}
@@ -153,20 +156,21 @@ export default function Diario() {
                         alt={post.title}
                         className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                         loading="lazy"
+                        onError={(e) => { (e.currentTarget.parentElement!.querySelector('.img-fallback') as HTMLElement)?.style.setProperty('display', 'flex'); e.currentTarget.style.display = 'none'; }}
                       />
-                    ) : (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-                        <div
-                          className="w-12 h-12 rounded-full grid place-items-center text-xl font-serif"
-                          style={{ background: `${meta.accent}18`, border: `1px solid ${meta.accent}40`, color: meta.accent }}
-                        >
-                          {meta.emoji}
-                        </div>
-                        <span className="text-[10px] uppercase tracking-[0.2em] text-[#8A8079]">
-                          Foto del día
-                        </span>
+                    ) : null}
+                    <div className="img-fallback absolute inset-0 flex-col items-center justify-center gap-3" style={{ display: post.image_url ? 'none' : 'flex' }}>
+                      <div
+                        className="w-12 h-12 rounded-full grid place-items-center text-xl font-serif"
+                        style={{ background: `${meta.accent}18`, border: `1px solid ${meta.accent}40`, color: meta.accent }}
+                      >
+                        {meta.emoji}
                       </div>
-                    )}
+                      <span className="text-[10px] uppercase tracking-[0.2em] text-[#8A8079]">
+                        Foto del día
+                      </span>
+                    </div>
+                    {/* Favorite toggle */}
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -211,6 +215,7 @@ export default function Diario() {
         )}
       </div>
 
+      {/* Immersive reading modal */}
       {selected && (
         <ReadingModal
           post={selected}
@@ -246,6 +251,7 @@ function ReadingModal({
         className="relative max-w-3xl w-full max-h-[90vh] overflow-y-auto glass-linen-strong rounded-3xl gold-glow-strong animate-scale-in"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Close */}
         <button
           onClick={onClose}
           className="absolute top-4 right-4 z-10 w-9 h-9 rounded-full glass-linen grid place-items-center hover:scale-110 transition-transform"
@@ -254,6 +260,7 @@ function ReadingModal({
           <X className="w-4 h-4 text-[#3D3833]" strokeWidth={1.5} />
         </button>
 
+        {/* Favorite */}
         <button
           onClick={onToggleFav}
           className="absolute top-4 left-4 z-10 w-9 h-9 rounded-full glass-linen grid place-items-center hover:scale-110 transition-transform"
@@ -265,25 +272,33 @@ function ReadingModal({
           />
         </button>
 
+        {/* 3:4 image / placeholder */}
         <div
           className="relative aspect-[3/4] max-h-[50vh] overflow-hidden rounded-t-3xl"
           style={{ background: `linear-gradient(160deg, ${meta.accent}10 0%, #EFECE6 70%)` }}
         >
           {post.image_url ? (
-            <img src={post.image_url} alt={post.title} className="absolute inset-0 w-full h-full object-cover" />
-          ) : (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-              <div
-                className="w-14 h-14 rounded-full grid place-items-center text-2xl font-serif"
-                style={{ background: `${meta.accent}18`, border: `1px solid ${meta.accent}40`, color: meta.accent }}
-              >
-                {meta.emoji}
-              </div>
-              <span className="text-[10px] uppercase tracking-[0.2em] text-[#8A8079]">Foto del día</span>
+            <img
+              src={post.image_url}
+              alt={post.title}
+              className="absolute inset-0 w-full h-full object-cover"
+              onError={(e) => { (e.currentTarget.parentElement!.querySelector('.img-fallback') as HTMLElement)?.style.setProperty('display', 'flex'); e.currentTarget.style.display = 'none'; }}
+            />
+          ) : null}
+          <div className="img-fallback absolute inset-0 flex-col items-center justify-center gap-3" style={{ display: post.image_url ? 'none' : 'flex' }}>
+            <div
+              className="w-14 h-14 rounded-full grid place-items-center text-2xl font-serif"
+              style={{ background: `${meta.accent}18`, border: `1px solid ${meta.accent}40`, color: meta.accent }}
+            >
+              {meta.emoji}
             </div>
-          )}
+            <span className="text-[10px] uppercase tracking-[0.2em] text-[#8A8079]">
+              Foto del día
+            </span>
+          </div>
         </div>
 
+        {/* Content */}
         <div className="p-7 lg:p-10">
           <div className="flex items-center gap-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8A8079]">
             <span style={{ color: meta.accent }}>{meta.label}</span>
@@ -301,6 +316,7 @@ function ReadingModal({
             {post.body}
           </p>
 
+          {/* Social content — TikTok / Instagram with copy button */}
           {(post.tiktok_script || post.instagram_text) && (
             <SocialContent tiktokScript={post.tiktok_script} instagramText={post.instagram_text} />
           )}
