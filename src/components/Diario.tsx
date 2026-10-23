@@ -4,7 +4,8 @@ import { Bookmark, X, Clock } from 'lucide-react';
 import { supabase, type DiaryPost, type DiaryCategory } from '@/lib/supabase';
 import { CATEGORIES, getCategoryMeta } from '@/lib/categories';
 import { getFavorites, toggleFavorite } from '@/lib/favorites';
-import SocialContent from '@/components/SocialContent';
+import { normalizeDriveUrl } from '@/lib/driveUrl';
+
 
 type Filter = DiaryCategory | 'all' | 'fav';
 
@@ -152,7 +153,7 @@ export default function Diario() {
                   >
                     {post.image_url ? (
                       <img
-                        src={post.image_url}
+                        src={normalizeDriveUrl(post.image_url)}
                         alt={post.title}
                         className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                         loading="lazy"
@@ -279,7 +280,7 @@ function ReadingModal({
         >
           {post.image_url ? (
             <img
-              src={post.image_url}
+              src={normalizeDriveUrl(post.image_url)}
               alt={post.title}
               className="absolute inset-0 w-full h-full object-cover"
               onError={(e) => { (e.currentTarget.parentElement!.querySelector('.img-fallback') as HTMLElement)?.style.setProperty('display', 'flex'); e.currentTarget.style.display = 'none'; }}
@@ -315,11 +316,6 @@ function ReadingModal({
           <p className="text-[#3D3833] text-base lg:text-lg leading-[1.8] font-light whitespace-pre-wrap">
             {post.body}
           </p>
-
-          {/* Social content — TikTok / Instagram with copy button */}
-          {(post.tiktok_script || post.instagram_text) && (
-            <SocialContent tiktokScript={post.tiktok_script} instagramText={post.instagram_text} />
-          )}
         </div>
       </div>
     </div>

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Clock } from 'lucide-react';
 import { supabase, type DiaryPost } from '@/lib/supabase';
 import { getCategoryMeta } from '@/lib/categories';
+import { normalizeDriveUrl } from '@/lib/driveUrl';
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('es-ES', {
@@ -57,7 +58,7 @@ export default function LatestEntry() {
       >
         {post.image_url ? (
           <img
-            src={post.image_url}
+            src={normalizeDriveUrl(post.image_url)}
             alt={post.title}
             className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
             loading="lazy"
