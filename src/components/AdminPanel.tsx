@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Send, Lock, Crown, Flame, Loader2, KeyRound, Copy, Check, Video, Camera, Clock } from 'lucide-react';
+import { Send, Lock, Crown, Flame, Loader2, KeyRound, Copy, Check, Video, Camera, Clock, Trash2, Edit3, X, ArrowLeft } from 'lucide-react';
 import { supabase, type DiaryCategory, type DiaryPost } from '@/lib/supabase';
 import { CATEGORIES, getCategoryMeta } from '@/lib/categories';
 import { computeStreak, type StreakResult } from '@/lib/streak';
@@ -17,6 +17,7 @@ function formatDate(iso: string) {
 }
 
 type Tab = 'tiktok' | 'instagram';
+type FormMode = 'create' | 'edit';
 
 function SocialContentPrivate({ tiktokScript, instagramText }: { tiktokScript: string | null; instagramText: string | null }) {
   const [tab, setTab] = useState<Tab>('tiktok');
@@ -76,9 +77,18 @@ function SocialContentPrivate({ tiktokScript, instagramText }: { tiktokScript: s
   );
 }
 
-function EntryHistoryItem({ post }: { post: DiaryPost }) {
+function EntryHistoryItem({
+  post,
+  onEdit,
+  onDelete,
+}: {
+  post: DiaryPost;
+  onEdit: (post: DiaryPost) => void;
+  onDelete: (post: DiaryPost) => void;
+}) {
   const [expanded, setExpanded] = useState(false);
   const meta = getCategoryMeta(post.category);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   return (
     <div className="glass-card rounded-2xl overflow-hidden">
@@ -90,7 +100,7 @@ function EntryHistoryItem({ post }: { post: DiaryPost }) {
           className="shrink-0 w-10 h-10 rounded-full grid place-items-center"
           style={{ background: `${meta.accent}15`, border: `1px solid ${meta.accent}40` }}
         >
-          <meta.icon className="w-4 h-4" strokeWidth={1.5} style={{ color: meta.accent }} />
+          <meta.icon className="w-4 h-4" strokeWidth={1.5) style={{ color: meta.accent }} />
         </div>
         <div className="min-w-0 flex-1">
           <p className="font-serif font-semibold text-sm text-[#3D3833] truncate">{post.title}</p>
@@ -125,6 +135,44 @@ function EntryHistoryItem({ post }: { post: DiaryPost }) {
           {(post.tiktok_script || post.instagram_text) && (
             <SocialContentPrivate tiktokScript={post.tiktok_script} instagramText={post.instagram_text} />
           )}
+
+          {/* Edit / Delete actions */}
+          <div className="mt-4 flex items-center gap-3">
+            <button
+              onClick={(e) => { e.stopPropagation(); onEdit(post); }}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gold/10 border border-gold/30 text-[12px] font-medium text-gold hover:bg-gold/20 transition-colors"
+            >
+              <Edit3 className="w-3.5 h-3.5" strokeWidth={1.5} />
+              Editar
+            </button>
+
+            {confirmDelete ? (
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-red-700 font-medium">¿Estás segura de eliminar esta publicación?</span>
+                <button
+                  onClick={(e) => { e.stopPropagation(); onDelete(post); setConfirmDelete(false); }}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-600 text-[12px] font-medium text-white hover:bg-red-700 transition-colors"
+                >
+                  <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
+                  Sí, eliminar
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setConfirmDelete(false); }}
+                  className="px-3 py-2 rounded-xl border border-nude text-[12px] text-[#8A8079] hover:text-[#3D3833] transition-colors"
+                >
+                  Cancelar
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={(e) => { e.stopPropagation(); setConfirmDelete(true); }}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-red-300 text-[12px] font-medium text-red-600 hover:bg-red-50 transition-colors"
+              >
+                <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
+                Eliminar
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -184,26 +232,38 @@ function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
 
 export default function AdminPanel() {
   const [unlocked, setUnlocked] = useState(() => sessionStorage.getItem(STORAGE_KEY) === 'true');
+
+  const [mode, setMode] = useState<FormMode>('create');
+  const [editingId, setEditingId] = useState<string | null>(null);
+
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<DiaryCategory>('mente');
   const [body, setBody] = useState('');
   const [tiktokScript, setTiktokScript] = useState('');
   const [instagramText, setInstagramText] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [error, setError] = useState('');
   const [currentStreak, setCurrentStreak] = useState<StreakResult | null>(null);
   const [streakPreview, setStreakPreview] = useState<StreakResult | null>(null);
   const [history, setHistory] = useState<DiaryPost[]>([]);
 
+  async function loadHistory() {
+    const { data: posts } = await supabase.from('diary_posts').select('*').order('created_at', { ascending: false });
+    if (posts) setHistory(posts as DiaryPost[]);
+  }
+
+  async function loadStreak() {
+    const { data: dates } = await supabase.from('diary_posts').select('created_at').order('created_at', { ascending: false });
+    if (dates && dates.length > 0) setCurrentStreak(computeStreak(dates.map((p: { created_at: string }) => p.created_at)));
+  }
+
   useEffect(() => {
     if (!unlocked) return;
     (async () => {
-      const { data: dates } = await supabase.from('diary_posts').select('created_at').order('created_at', { ascending: false });
-      if (dates && dates.length > 0) setCurrentStreak(computeStreak(dates.map((p) => p.created_at)));
-
-      const { data: posts } = await supabase.from('diary_posts').select('*').order('created_at', { ascending: false });
-      if (posts) setHistory(posts as DiaryPost[]);
+      await loadStreak();
+      await loadHistory();
     })();
   }, [unlocked]);
 
@@ -213,6 +273,44 @@ export default function AdminPanel() {
     setStreakPreview(computeStreak([nowIso]));
   }, [currentStreak]);
 
+  function resetForm() {
+    setMode('create');
+    setEditingId(null);
+    setTitle('');
+    setCategory('mente');
+    setBody('');
+    setTiktokScript('');
+    setInstagramText('');
+    setImageUrl('');
+    setError('');
+  }
+
+  function handleEdit(post: DiaryPost) {
+    setMode('edit');
+    setEditingId(post.id);
+    setTitle(post.title);
+    setCategory(post.category);
+    setBody(post.body);
+    setTiktokScript(post.tiktok_script ?? '');
+    setInstagramText(post.instagram_text ?? '');
+    setImageUrl(post.image_url ?? '');
+    setStatus('idle');
+    setError('');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  async function refreshStreakAfterMutation() {
+    const { data: allDates } = await supabase.from('diary_posts').select('created_at').order('created_at', { ascending: false });
+    if (allDates && allDates.length > 0) {
+      const newStreak = computeStreak(allDates.map((p: { created_at: string }) => p.created_at));
+      setCurrentStreak(newStreak);
+      await supabase.from('sovereignty_stats').upsert({ metric_key: 'mental_streak', metric_value: String(newStreak.count), updated_at: new Date().toISOString() }, { onConflict: 'metric_key' });
+      await supabase.from('sovereignty_stats').upsert({ metric_key: 'mental_detail', metric_value: newStreak.label, updated_at: new Date().toISOString() }, { onConflict: 'metric_key' });
+    } else {
+      setCurrentStreak(null);
+    }
+  }
+
   async function handlePublish(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim() || !body.trim()) { setError('El título y la reflexión son obligatorios.'); return; }
@@ -220,28 +318,48 @@ export default function AdminPanel() {
 
     const normalizedImage = imageUrl.trim() ? normalizeDriveUrl(imageUrl.trim()) : null;
 
-    const { data: postData, error: insertError } = await supabase.from('diary_posts').insert({
-      title: title.trim(), category, body: body.trim(),
-      tiktok_script: tiktokScript.trim() || null,
-      instagram_text: instagramText.trim() || null,
-      image_url: normalizedImage,
-    }).select('*').single();
+    if (mode === 'edit' && editingId) {
+      const { error: updateError } = await supabase.from('diary_posts').update({
+        title: title.trim(),
+        category,
+        body: body.trim(),
+        tiktok_script: tiktokScript.trim() || null,
+        instagram_text: instagramText.trim() || null,
+        image_url: normalizedImage,
+      }).eq('id', editingId);
 
-    if (insertError || !postData) { setStatus('error'); setError('No se pudo publicar. Inténtalo de nuevo.'); return; }
+      if (updateError) { setStatus('error'); setError('No se pudo actualizar. Inténtalo de nuevo.'); return; }
 
-    const { data: allDates } = await supabase.from('diary_posts').select('created_at').order('created_at', { ascending: false });
-    if (allDates && allDates.length > 0) {
-      const newStreak = computeStreak(allDates.map((p) => p.created_at));
-      setCurrentStreak(newStreak);
-      await supabase.from('sovereignty_stats').upsert({ metric_key: 'mental_streak', metric_value: String(newStreak.count), updated_at: new Date().toISOString() }, { onConflict: 'metric_key' });
-      await supabase.from('sovereignty_stats').upsert({ metric_key: 'mental_detail', metric_value: newStreak.label, updated_at: new Date().toISOString() }, { onConflict: 'metric_key' });
+      await refreshStreakAfterMutation();
+      await loadHistory();
+      setStatus('success');
+      setTimeout(() => { setStatus('idle'); resetForm(); }, 5000);
+    } else {
+      const { error: insertError } = await supabase.from('diary_posts').insert({
+        title: title.trim(), category, body: body.trim(),
+        tiktok_script: tiktokScript.trim() || null,
+        instagram_text: instagramText.trim() || null,
+        image_url: normalizedImage,
+      });
+
+      if (insertError) { setStatus('error'); setError('No se pudo publicar. Inténtalo de nuevo.'); return; }
+
+      await refreshStreakAfterMutation();
+      await loadHistory();
+      setStatus('success');
+      resetForm();
+      setTimeout(() => setStatus('idle'), 5000);
     }
+  }
 
-    const { data: freshPosts } = await supabase.from('diary_posts').select('*').order('created_at', { ascending: false });
-    if (freshPosts) setHistory(freshPosts as DiaryPost[]);
+  async function handleDelete(post: DiaryPost) {
+    const { error: deleteError } = await supabase.from('diary_posts').delete().eq('id', post.id);
+    if (deleteError) { setError('No se pudo eliminar. Inténtalo de nuevo.'); return; }
 
-    setStatus('success'); setTitle(''); setBody(''); setTiktokScript(''); setInstagramText(''); setImageUrl('');
-    setTimeout(() => setStatus('idle'), 5000);
+    if (editingId === post.id) resetForm();
+
+    await refreshStreakAfterMutation();
+    await loadHistory();
   }
 
   if (!unlocked) return <PasswordGate onUnlock={() => setUnlocked(true)} />;
@@ -281,13 +399,43 @@ export default function AdminPanel() {
         )}
 
         <div className="glass-card rounded-3xl p-7 lg:p-10 gold-glow animate-fade-up" style={{ animationDelay: '0.1s' }}>
+          {/* Mode indicator */}
+          {mode === 'edit' && (
+            <div className="mb-5 flex items-center justify-between px-4 py-3 rounded-xl bg-gold/10 border border-gold/30">
+              <div className="flex items-center gap-2">
+                <Edit3 className="w-4 h-4 text-gold" strokeWidth={1.5} />
+                <span className="text-[12px] font-medium text-gold">Modo edición — Estás editando una publicación existente</span>
+              </div>
+              <button
+                onClick={resetForm}
+                className="inline-flex items-center gap-1 text-[11px] text-[#8A8079] hover:text-[#3D3833] transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />
+                Cancelar edición
+              </button>
+            </div>
+          )}
+
           {status === 'success' ? (
             <div className="py-10 text-center animate-scale-in">
               <div className="w-16 h-16 rounded-full bg-gold/15 border border-gold/40 grid place-items-center mx-auto mb-5 gold-glow">
                 <Crown className="w-8 h-8 text-gold" strokeWidth={1.5} />
               </div>
-              <h3 className="font-serif font-semibold text-2xl text-[#3D3833]">Publicado</h3>
-              <p className="mt-2 text-sm text-[#8A8079] max-w-sm mx-auto">La entrada ya está en el feed público. La racha de Soberanía Mental se actualizó automáticamente.</p>
+              <h3 className="font-serif font-semibold text-2xl text-[#3D3833]">
+                {mode === 'edit' ? 'Actualizado' : 'Publicado'}
+              </h3>
+              <p className="mt-2 text-sm text-[#8A8079] max-w-sm mx-auto">
+                {mode === 'edit'
+                  ? 'Los cambios se guardaron correctamente. La entrada actualizada ya está en el feed público.'
+                  : 'La entrada ya está en el feed público. La racha de Soberanía Mental se actualizó automáticamente.'}
+              </p>
+              <button
+                onClick={resetForm}
+                className="mt-5 inline-flex items-center gap-1.5 text-[12px] font-medium text-gold hover:underline"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                Volver a crear nueva entrada
+              </button>
             </div>
           ) : (
             <form onSubmit={handlePublish} className="space-y-6">
@@ -319,18 +467,33 @@ export default function AdminPanel() {
               </div>
               <div>
                 <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8A8079] mb-2">Foto <span className="text-[#EAD7C3] normal-case tracking-normal">(opcional)</span></label>
-                <input type="url" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://… (URL de la foto del día o enlace de Google Drive)" className="w-full px-4 py-3.5 rounded-xl bg-white/50 border border-nude text-[#3D3833] text-sm placeholder:text-[#8A8079] focus:outline-none focus:border-gold/50 transition-colors" />
-                <p className="mt-1.5 text-[10px] text-[#8A8079]">Los enlaces de Google Drive se convierten automáticamente a formato de imagen.</p>
+                <input type="text" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://… (URL de la foto, enlace de Google Drive o .jpg/.png/.webp)" className="w-full px-4 py-3.5 rounded-xl bg-white/50 border border-nude text-[#3D3833] text-sm placeholder:text-[#8A8079] focus:outline-none focus:border-gold/50 transition-colors" />
+                <p className="mt-1.5 text-[10px] text-[#8A8079]">Los enlaces de Google Drive se convierten automáticamente. Las URLs directas (.jpg, .png, .webp) pasan sin modificar.</p>
+                {imageUrl.trim() && (
+                  <div className="mt-3 rounded-xl overflow-hidden aspect-[16/9] max-w-xs">
+                    <img
+                      src={normalizeDriveUrl(imageUrl.trim())}
+                      alt="Vista previa"
+                      className="w-full h-full object-cover"
+                      onError={(e) => { e.currentTarget.style.display = 'none'; const parent = e.currentTarget.parentElement; if (parent) parent.style.display = 'none'; }}
+                    />
+                  </div>
+                )}
               </div>
               {error && <p className="text-xs text-red-700">{error}</p>}
-              <button type="submit" disabled={status === 'loading'} className="w-full inline-flex items-center justify-center gap-2.5 px-7 py-4 rounded-xl bg-[#3D3833] font-semibold text-sm tracking-wide gold-glow hover:bg-[#5C544D] transition-colors disabled:opacity-60" style={{ color: '#EFECE6' }}>
-                {status === 'loading' ? (<><Loader2 className="w-4.5 h-4.5 animate-spin" strokeWidth={1.75} />Publicando…</>) : (<><Send className="w-4.5 h-4.5" strokeWidth={1.75} />Publicar entrada</>)}
-              </button>
+              <div className="flex gap-3">
+                <button type="submit" disabled={status === 'loading'} className="flex-1 inline-flex items-center justify-center gap-2.5 px-7 py-4 rounded-xl bg-[#3D3833] font-semibold text-sm tracking-wide gold-glow hover:bg-[#5C544D] transition-colors disabled:opacity-60" style={{ color: '#EFECE6' }}>
+                  {status === 'loading' ? (<><Loader2 className="w-4.5 h-4.5 animate-spin" strokeWidth={1.75} />{mode === 'edit' ? 'Actualizando…' : 'Publicando…'}</>) : mode === 'edit' ? (<><Send className="w-4.5 h-4.5" strokeWidth={1.75} />Guardar Cambios</>) : (<><Send className="w-4.5 h-4.5" strokeWidth={1.75} />Publicar entrada</>)}
+                </button>
+                {mode === 'edit' && (
+                  <button type="button" onClick={resetForm} className="px-5 py-4 rounded-xl border border-nude text-sm font-medium text-[#8A8079] hover:text-[#3D3833] hover:border-gold/30 transition-colors">Cancelar</button>
+                )}
+              </div>
             </form>
           )}
         </div>
 
-        {/* Entry history — private, with social content */}
+        {/* Entry history — private, with edit/delete and social content */}
         {history.length > 0 && (
           <div className="mt-12 animate-fade-up" style={{ animationDelay: '0.15s' }}>
             <div className="flex items-center gap-3 mb-5">
@@ -338,10 +501,10 @@ export default function AdminPanel() {
               <h2 className="font-serif font-bold text-xl text-[#3D3833]">Historial de entradas</h2>
               <div className="kintsugi-divider flex-1" />
             </div>
-            <p className="text-[11px] text-[#8A8079] mb-4">Toca cualquier entrada para ver el contenido completo, los copys de redes sociales y copiarlos directamente.</p>
+            <p className="text-[11px] text-[#8A8079] mb-4">Toca cualquier entrada para ver el contenido completo, editarla o eliminarla. Los copys de redes sociales están disponibles con botón de copiar.</p>
             <div className="space-y-3">
               {history.map((post) => (
-                <EntryHistoryItem key={post.id} post={post} />
+                <EntryHistoryItem key={post.id} post={post} onEdit={handleEdit} onDelete={handleDelete} />
               ))}
             </div>
           </div>
