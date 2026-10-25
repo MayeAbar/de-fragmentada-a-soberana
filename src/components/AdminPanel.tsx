@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react';
-import { Send, Lock, Crown, Flame, Loader2, KeyRound, Copy, Check, Video, Camera, Clock, Trash2, Edit, X, ArrowLeft } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Send, Lock, Crown, Flame, Loader2, KeyRound, Copy, Check, Video, Camera, Clock, Trash2, Edit, X, ArrowLeft, UploadCloud } from 'lucide-react';
 import { supabase, type DiaryCategory, type DiaryPost } from '@/lib/supabase';
 import { CATEGORIES, getCategoryMeta } from '@/lib/categories';
 import { computeStreak, type StreakResult } from '@/lib/streak';
-import { normalizeDriveUrl } from '@/lib/driveUrl';
 
 const ADMIN_PASSWORD = 'soberana2026';
 const STORAGE_KEY = 'dfas_admin_auth';
+const MAX_IMAGE_BYTES = 4_500_000;
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('es-ES', {
@@ -122,7 +122,7 @@ function EntryHistoryItem({
           {post.image_url && (
             <div className="mt-4 rounded-xl overflow-hidden aspect-[16/9]">
               <img
-                src={normalizeDriveUrl(post.image_url)}
+                src={post.image_url}
                 alt={post.title}
                 className="w-full h-full object-cover"
                 onError={(e) => { e.currentTarget.style.display = 'none'; }}
@@ -240,13 +240,18 @@ export default function AdminPanel() {
   const [body, setBody] = useState('');
   const [tiktokScript, setTiktokScript] = useState('');
   const [instagramText, setInstagramText] = useState('');
-  const [imageUrl, setImageUrl] = useState('');
+  const [imageData, setImageData] = useState<string | null>(null);
+
+  const [imageProcessing, setImageProcessing] = useState(false);
+  const [imageError, setImageError] = useState('');
 
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [error, setError] = useState('');
   const [currentStreak, setCurrentStreak] = useState<StreakResult | null>(null);
   const [streakPreview, setStreakPreview] = useState<StreakResult | null>(null);
   const [history, setHistory] = useState<DiaryPost[]>([]);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function loadHistory() {
     const { data: posts } = await supabase.from('diary_posts').select('*').order('created_at', { ascending: false });
@@ -280,8 +285,10 @@ export default function AdminPanel() {
     setBody('');
     setTiktokScript('');
     setInstagramText('');
-    setImageUrl('');
+    setImageData(null);
+    setImageError('');
     setError('');
+    if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
   function handleEdit(post: DiaryPost) {
@@ -292,9 +299,11 @@ export default function AdminPanel() {
     setBody(post.body);
     setTiktokScript(post.tiktok_script ?? '');
     setInstagramText(post.instagram_text ?? '');
-    setImageUrl(post.image_url ?? '');
+    setImageData(post.image_url ?? null);
+    setImageError('');
     setStatus('idle');
     setError('');
+    if (fileInputRef.current) fileInputRef.current.value = '';
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -310,12 +319,51 @@ export default function AdminPanel() {
     }
   }
 
+  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setImageError('El archivo seleccionado no es una imagen.');
+      return;
+    }
+
+    if (file.size > MAX_IMAGE_BYTES) {
+      setImageError('La imagen es demasiado grande (máximo ~4.5 MB). Usa una más pequeña.');
+      return;
+    }
+
+    setImageError('');
+    setImageProcessing(true);
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result;
+      if (typeof result === 'string') {
+        setImageData(result);
+        setImageProcessing(false);
+      } else {
+        setImageError('No se pudo procesar la imagen. Inténtalo de nuevo.');
+        setImageProcessing(false);
+      }
+    };
+    reader.onerror = () => {
+      setImageError('Error al leer el archivo. Inténtalo de nuevo.');
+      setImageProcessing(false);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function handleRemoveImage() {
+    setImageData(null);
+    setImageError('');
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }
+
   async function handlePublish(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim() || !body.trim()) { setError('El título y la reflexión son obligatorios.'); return; }
     setStatus('loading'); setError('');
-
-    const normalizedImage = imageUrl.trim() ? normalizeDriveUrl(imageUrl.trim()) : null;
 
     if (mode === 'edit' && editingId) {
       const { error: updateError } = await supabase.from('diary_posts').update({
@@ -324,7 +372,7 @@ export default function AdminPanel() {
         body: body.trim(),
         tiktok_script: tiktokScript.trim() || null,
         instagram_text: instagramText.trim() || null,
-        image_url: normalizedImage,
+        image_url: imageData,
       }).eq('id', editingId);
 
       if (updateError) { setStatus('error'); setError('No se pudo actualizar. Inténtalo de nuevo.'); return; }
@@ -338,7 +386,7 @@ export default function AdminPanel() {
         title: title.trim(), category, body: body.trim(),
         tiktok_script: tiktokScript.trim() || null,
         instagram_text: instagramText.trim() || null,
-        image_url: normalizedImage,
+        image_url: imageData,
       });
 
       if (insertError) { setStatus('error'); setError('No se pudo publicar. Inténtalo de nuevo.'); return; }
@@ -465,27 +513,33 @@ export default function AdminPanel() {
               </div>
               <div>
                 <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8A8079] mb-2">Foto <span className="text-[#EAD7C3] normal-case tracking-normal">(opcional)</span></label>
-                <input type="text" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://… (URL de la foto, enlace de Google Drive o .jpg/.png/.webp)" className="w-full px-4 py-3.5 rounded-xl bg-white/50 border border-nude text-[#3D3833] text-sm placeholder:text-[#8A8079] focus:outline-none focus:border-gold/50 transition-colors" />
-                <p className="mt-1.5 text-[10px] text-[#8A8079]">Los enlaces de Google Drive se convierten automáticamente. Las URLs directas (.jpg, .png, .webp) pasan sin modificar.</p>
-                {imageUrl.trim() && (
-                  <div className="mt-3 rounded-xl overflow-hidden aspect-[16/9] max-w-xs">
-                    <img
-                      src={normalizeDriveUrl(imageUrl.trim())}
-                      alt="Vista previa"
-                      className="w-full h-full object-cover"
-                      onError={(e) => { e.currentTarget.style.display = 'none'; const parent = e.currentTarget.parentElement; if (parent) parent.style.display = 'none'; }}
-                    />
+
+                {imageData ? (
+                  <div className="relative rounded-xl overflow-hidden group">
+                    <img src={imageData} alt="Vista previa" className="w-full aspect-[16/9] object-cover" />
+                    <button type="button" onClick={handleRemoveImage} className="absolute top-2 right-2 w-8 h-8 rounded-full bg-[#3D3833]/80 grid place-items-center text-[#EFECE6] hover:bg-[#3D3833] transition-colors" aria-label="Quitar imagen">
+                      <X className="w-4 h-4" strokeWidth={1.5} />
+                    </button>
+                    <p className="absolute bottom-2 left-2 px-2.5 py-1 rounded-full bg-gold/90 text-[10px] font-medium text-[#3D3833]">Imagen cargada</p>
                   </div>
+                ) : (
+                  <label htmlFor="image-upload" className="flex flex-col items-center justify-center gap-3 px-6 py-10 rounded-xl border-2 border-dashed border-nude bg-white/30 cursor-pointer hover:border-gold/50 hover:bg-gold/5 transition-colors">
+                    {imageProcessing ? (
+                      <><Loader2 className="w-7 h-7 text-gold animate-spin" strokeWidth={1.5} /><span className="text-[12px] text-[#8A8079]">Procesando imagen…</span></>
+                    ) : (
+                      <><div className="w-12 h-12 rounded-full bg-gold/10 border border-gold/30 grid place-items-center"><UploadCloud className="w-6 h-6 text-gold" strokeWidth={1.5} /></div><div className="text-center"><p className="text-[13px] font-medium text-[#3D3833]">Arrastra o toca para subir una foto</p><p className="mt-1 text-[11px] text-[#8A8079]">JPG, PNG o WebP · máximo ~4.5 MB</p></div></>
+                    )}
+                    <input ref={fileInputRef} id="image-upload" type="file" accept="image/*" onChange={handleFileSelect} className="hidden" disabled={imageProcessing} />
+                  </label>
                 )}
+                {imageError && <p className="mt-2 text-[11px] text-red-700">{imageError}</p>}
               </div>
               {error && <p className="text-xs text-red-700">{error}</p>}
               <div className="flex gap-3">
-                <button type="submit" disabled={status === 'loading'} className="flex-1 inline-flex items-center justify-center gap-2.5 px-7 py-4 rounded-xl bg-[#3D3833] font-semibold text-sm tracking-wide gold-glow hover:bg-[#5C544D] transition-colors disabled:opacity-60" style={{ color: '#EFECE6' }}>
+                <button type="submit" disabled={status === 'loading' || imageProcessing} className="flex-1 inline-flex items-center justify-center gap-2.5 px-7 py-4 rounded-xl bg-[#3D3833] font-semibold text-sm tracking-wide gold-glow hover:bg-[#5C544D] transition-colors disabled:opacity-60" style={{ color: '#EFECE6' }}>
                   {status === 'loading' ? (<><Loader2 className="w-4.5 h-4.5 animate-spin" strokeWidth={1.75} />{mode === 'edit' ? 'Actualizando…' : 'Publicando…'}</>) : mode === 'edit' ? (<><Send className="w-4.5 h-4.5" strokeWidth={1.75} />Guardar Cambios</>) : (<><Send className="w-4.5 h-4.5" strokeWidth={1.75} />Publicar entrada</>)}
                 </button>
-                {mode === 'edit' && (
-                  <button type="button" onClick={resetForm} className="px-5 py-4 rounded-xl border border-nude text-sm font-medium text-[#8A8079] hover:text-[#3D3833] hover:border-gold/30 transition-colors">Cancelar</button>
-                )}
+                {mode === 'edit' && (<button type="button" onClick={resetForm} className="px-5 py-4 rounded-xl border border-nude text-sm font-medium text-[#8A8079] hover:text-[#3D3833] hover:border-gold/30 transition-colors">Cancelar</button>)}
               </div>
             </form>
           )}
@@ -500,9 +554,7 @@ export default function AdminPanel() {
             </div>
             <p className="text-[11px] text-[#8A8079] mb-4">Toca cualquier entrada para ver el contenido completo, editarla o eliminarla. Los copys de redes sociales están disponibles con botón de copiar.</p>
             <div className="space-y-3">
-              {history.map((post) => (
-                <EntryHistoryItem key={post.id} post={post} onEdit={handleEdit} onDelete={handleDelete} />
-              ))}
+              {history.map((post) => (<EntryHistoryItem key={post.id} post={post} onEdit={handleEdit} onDelete={handleDelete} />))}
             </div>
           </div>
         )}
