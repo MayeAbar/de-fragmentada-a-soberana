@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Send, Lock, Crown, Flame, Loader2, KeyRound, Copy, Check, Video, Camera, Clock, Trash2, Edit3, X, ArrowLeft } from 'lucide-react';
+import { Send, Lock, Crown, Flame, Loader2, KeyRound, Copy, Check, Video, Camera, Clock, Trash2, Edit, X, ArrowLeft } from 'lucide-react';
 import { supabase, type DiaryCategory, type DiaryPost } from '@/lib/supabase';
 import { CATEGORIES, getCategoryMeta } from '@/lib/categories';
 import { computeStreak, type StreakResult } from '@/lib/streak';
@@ -100,7 +100,7 @@ function EntryHistoryItem({
           className="shrink-0 w-10 h-10 rounded-full grid place-items-center"
           style={{ background: `${meta.accent}15`, border: `1px solid ${meta.accent}40` }}
         >
-          <meta.icon className="w-4 h-4" strokeWidth={1.5) style={{ color: meta.accent }} />
+          <meta.icon className="w-4 h-4" strokeWidth={1.5} style={{ color: meta.accent }} />
         </div>
         <div className="min-w-0 flex-1">
           <p className="font-serif font-semibold text-sm text-[#3D3833] truncate">{post.title}</p>
@@ -136,13 +136,12 @@ function EntryHistoryItem({
             <SocialContentPrivate tiktokScript={post.tiktok_script} instagramText={post.instagram_text} />
           )}
 
-          {/* Edit / Delete actions */}
           <div className="mt-4 flex items-center gap-3">
             <button
               onClick={(e) => { e.stopPropagation(); onEdit(post); }}
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gold/10 border border-gold/30 text-[12px] font-medium text-gold hover:bg-gold/20 transition-colors"
             >
-              <Edit3 className="w-3.5 h-3.5" strokeWidth={1.5} />
+              <Edit className="w-3.5 h-3.5" strokeWidth={1.5} />
               Editar
             </button>
 
@@ -399,11 +398,10 @@ export default function AdminPanel() {
         )}
 
         <div className="glass-card rounded-3xl p-7 lg:p-10 gold-glow animate-fade-up" style={{ animationDelay: '0.1s' }}>
-          {/* Mode indicator */}
           {mode === 'edit' && (
             <div className="mb-5 flex items-center justify-between px-4 py-3 rounded-xl bg-gold/10 border border-gold/30">
               <div className="flex items-center gap-2">
-                <Edit3 className="w-4 h-4 text-gold" strokeWidth={1.5} />
+                <Edit className="w-4 h-4 text-gold" strokeWidth={1.5} />
                 <span className="text-[12px] font-medium text-gold">Modo edición — Estás editando una publicación existente</span>
               </div>
               <button
@@ -493,7 +491,6 @@ export default function AdminPanel() {
           )}
         </div>
 
-        {/* Entry history — private, with edit/delete and social content */}
         {history.length > 0 && (
           <div className="mt-12 animate-fade-up" style={{ animationDelay: '0.15s' }}>
             <div className="flex items-center gap-3 mb-5">
